@@ -1,0 +1,41 @@
+services:
+
+  grafana:
+    image: grafana/grafana:9.3.6
+    container_name: grafana_monitor
+    ports:
+      - "3000:3000"
+    
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: grc_cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    ports:
+      - "8080:8080"
+    
+  prometheus:
+    image: prom/prometheus
+    container_name: prom_prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus
+    command:
+      - "--storage.tsdb.retention.time=30d"
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+    ports:
+      - "9100:9100"
