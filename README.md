@@ -49,7 +49,7 @@ Caso não possua o Docker instalado pode instalá-lo via script oficial com o co
     1. Faça login no Grafana (usuário e senha padrão: `admin`/`admin`, caso não tenha alterado).
     2. No menu lateral, clique em **Configuration** > **Data Sources**.
     3. Clique em **Add data source** e selecione **Prometheus**.
-    4. Insira a URL do Prometheus (geralmente `http://localhost:9090`).
+    4. Insira a URL do Prometheus (IP do Container).
     5. Clique em **Save & Test** para validar a conexão.
 
 
