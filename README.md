@@ -73,3 +73,52 @@ Caso não possua o Docker instalado pode instalá-lo via script oficial com o co
     Após esse procedimento, o painel deverá estar funcionando normalmente.
 
 ## Funcionamento
+
+O projeto funciona da seguinte forma, o cAdvisor coletar métricas em tempo real dos containers que estão em execução,
+já o script coleta métricas dos containers que estão parados há muito tempo. O cAdvisor por si só não coleta métricas 
+de containers que estão parados há muito tempo. Já que o intuito do cAdvisor é analisar métricas dos containers que estão
+em execução.
+
+### Por que utilizar cAdvisor?
+
+O cAdvisor é focado em métricas de curta duração, dessa forma ele age coletando métricas dos containers que estão
+em execução no momento. Ele não é ideal para manter um histórico longe de containers antigos ou pausados/removidos.
+Containers que estão no estado `Exited` são descartados do monitoramento do cAdvisor após um certo periodo. Para coletarmos métricas de containers que estão no estado `Exited` nós utilizaremos o script em python.
+
+### Como funciona o script Python?
+
+O script python é focado em pegar as métricas dos containers que estão parados há mais tempo. Ele funciona basicamente
+dando um comando `docker ps -a`, após ele obter os resultados via cli, ou seja, via linha de comando, ele verifica os containers
+que estão com o estado `Exited`. Com as informações obtidas o script expõe um endpoint com as métricas fornecidas no formato do 
+Prometheus.
+
+#### Exemplo
+ 
+        # HELP container_status Container status (1 = running, 0 = exited)
+        # TYPE container_status gauge
+        container_status{name="monitor_script",image="docker-monitor_script:latest",status="running"} 1
+        
+### Prometheus
+
+O Prometheus fica responsável por fazer a coletas das métricas. Com o Prometheus nós podemos criar alertas personalizados com base no melhor caso de uso para quem for aplicar. O mais interessante é que containers que contém aplicações críticas podem ter seus status monitorados atráves do script. Caso o container para inesperadamente pode ser disparado um alerta para o time responsável.
+
+### Grafana
+
+Com o Grafana nos podemos criar dashboards que se adequem a cada caso de uso.
+
+![Dashboard](./images/image.png)
+
+## Conclusão
+
+A combinação do cAdvisor para monitoramento de containers em execução e o script Python para containers `Exited` permite uma visão abrangente e contínua da saúde dos containers em seu ambiente Docker. Usando o Prometheus para coletar e expor métricas, podemos criar alertas e garantir que containers críticos sejam monitorados de forma eficiente, mesmo após sua parada.
+
+## Possibilidades de Melhorias
+
+O projeto está disponibilizado para a comunidade. Assim, quem for utilizar pode adequar o script a sua maneira para coletar as métricas da melhor forma. Pode-se ainda fazer uma melhoria na coleta de métricas do cAdvisor e nas configurações do Prometheus.
+
+## Referências 
+
+Aqui estão as principais referências que usei:
+
+- [Monitoring Docker Containers with cAdvisor, Prometheus, and Grafana Using Docker Compose](https://medium.com/@varunjain2108/monitoring-docker-containers-with-cadvisor-prometheus-and-grafana-d101b4dbbc84)
+- [Documentação Prometheus](https://prometheus.io/docs/tutorials/getting_started/)
