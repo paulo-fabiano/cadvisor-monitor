@@ -2,12 +2,10 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-VOLUME /var/run/docker.sock:/var/run/docker.sock:ro
-
 RUN pip install docker \
     && pip install httpserver \
     && pip install requests
 
-COPY ./monitor_script.py ./
+COPY ./python/monitor_script.py ./
 
 CMD [ "python3", "./monitor_script.py" ]

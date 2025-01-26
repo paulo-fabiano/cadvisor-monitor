@@ -62,12 +62,12 @@ services:
       - "9100:9100"
 
   monitor_script:
-    image: python:3.10
+    build:
+      context: .
+      dockerfile: ./python/Dockerfile.Python
     container_name: monitor_script
-    working_dir: /app
     volumes:
-      - ./python_script/monitor_script.py:/app/monitor_script.py
-    command: python /app/monitor_script.py
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       monitoramento:
         ipv4_address: 192.168.1.6

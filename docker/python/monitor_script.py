@@ -1,15 +1,11 @@
 import time
-import requests
 from docker import from_env
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import threading
 
 # Configura o cliente Docker
 client = from_env()
 
-# URL do endpoint onde os dados serão enviados
-ENDPOINT = "http://localhost:8085/metrics"
-
+# Função para coletar métricas dos containers
 def collect_containers():
     metrics = []
     for container in client.containers.list(all=True):
@@ -25,38 +21,26 @@ def collect_containers():
 
 # Classe para o servidor HTTP
 class MetricsReceiverHandler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        # Lê os dados enviados no corpo da requisição
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length).decode('utf-8')
-        print("Métricas recebidas no servidor:\n")
-        print(post_data)
-
-        # Retorna uma resposta ao cliente
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write("Métricas recebidas com sucesso.")
+    def do_GET(self):
+        # Responde às requisições GET no endpoint /metrics
+        if self.path == "/metrics":
+            # Coleta as métricas no momento da requisição
+            metrics = collect_containers()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(metrics.encode("utf-8"))
+        else:
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(b"Not Found")
 
 # Função para iniciar o servidor HTTP
 def start_server():
-    server = HTTPServer(('0.0.0.0', 8000), MetricsReceiverHandler)
-    print("Servidor HTTP rodando na porta 8000...")
+    server = HTTPServer(('0.0.0.0', 8085), MetricsReceiverHandler)
+    print("Servidor HTTP rodando na porta 8085...")
     server.serve_forever()
 
-# Iniciar o servidor em uma thread separada
-server_thread = threading.Thread(target=start_server, daemon=True)
-server_thread.start()
-
-# Loop principal para coletar e enviar métricas
-while True:
-    print("Coletando dados dos containers...")
-    metrics = collect_containers()
-    
-    try:
-        # Envia os dados para o endpoint
-        response = requests.post(ENDPOINT, data=metrics, headers={"Content-Type": "text/plain"})
-        print(f"Status do envio: {response.status_code}")
-    except Exception as e:
-        print(f"Erro ao enviar métricas: {e}")
-    
-    time.sleep(60)
+# Inicia o servidor HTTP
+if __name__ == "__main__":
+    start_server()
