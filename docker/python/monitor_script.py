@@ -1,9 +1,13 @@
 import time
 from docker import from_env
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from threading import Thread
 
 # Configura o cliente Docker
 client = from_env()
+
+# Variável global para armazenar as métricas
+global_metrics = ""
 
 # Função para coletar métricas dos containers
 def collect_containers():
@@ -19,17 +23,22 @@ def collect_containers():
         )
     return "\n".join(metrics)
 
+# Função para atualizar as métricas periodicamente
+def update_metrics():
+    global global_metrics
+    while True:
+        global_metrics = collect_containers()
+        time.sleep(5)  # Espera 5 segundos antes de coletar novamente
+
 # Classe para o servidor HTTP
 class MetricsReceiverHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         # Responde às requisições GET no endpoint /metrics
         if self.path == "/metrics":
-            # Coleta as métricas no momento da requisição
-            metrics = collect_containers()
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.end_headers()
-            self.wfile.write(metrics.encode("utf-8"))
+            self.wfile.write(global_metrics.encode("utf-8"))
         else:
             self.send_response(404)
             self.end_headers()
@@ -41,6 +50,9 @@ def start_server():
     print("Servidor HTTP rodando na porta 8085...")
     server.serve_forever()
 
-# Inicia o servidor HTTP
+# Inicia o servidor HTTP e a coleta periódica de métricas
 if __name__ == "__main__":
+    # Inicia a thread para atualizar as métricas
+    Thread(target=update_metrics, daemon=True).start()
+    # Inicia o servidor HTTP
     start_server()
